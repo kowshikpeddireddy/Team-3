@@ -278,6 +278,23 @@ def get_team_performance():
 
 # ==================== TASKS ENDPOINTS ====================
 
+@app.route('/api/tasks/status-counts', methods=['GET'])
+def get_task_status_counts():
+    """Get count of tasks by status"""
+    all_count = Task.query.count()
+    open_count = Task.query.filter_by(status='Open').count()
+    in_progress_count = Task.query.filter_by(status='In Progress').count()
+    completed_count = Task.query.filter_by(status='Completed').count()
+    blocked_count = Task.query.filter_by(status='Blocked').count()
+    
+    return jsonify({
+        'all': all_count,
+        'open': open_count,
+        'in_progress': in_progress_count,
+        'completed': completed_count,
+        'blocked': blocked_count
+    })
+
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
     """Get all tasks with optional filters and pagination"""
@@ -496,192 +513,6 @@ def get_user(user_id):
         'is_active': user.is_active
     })
 
-# ==================== AI INSIGHTS ENDPOINTS ====================
-
-@app.route('/api/ai/summary', methods=['GET'])
-def get_ai_summary():
-    """AI-powered summary"""
-    completed_24h = Task.query.filter(
-        Task.status == 'Completed',
-        Task.completed_date >= datetime.now() - timedelta(hours=24)
-    ).count()
-    
-    # Calculate average closure time
-    completed_tasks = Task.query.filter(
-        Task.status == 'Completed',
-        Task.completed_date.isnot(None),
-        Task.created_date.isnot(None)
-    ).limit(50).all()
-    
-    if completed_tasks:
-        closure_times = []
-        for task in completed_tasks:
-            delta = task.completed_date - task.created_date
-            hours = delta.total_seconds() / 3600
-            closure_times.append(hours)
-        avg_closure = round(sum(closure_times) / len(closure_times), 1)
-    else:
-        avg_closure = 58.1
-    
-    blocked = Task.query.filter_by(status='Blocked').count()
-    
-    velocity_change = round(random.uniform(-20, -15), 1)
-    
-    summary = f"Over the last 24 hours, your team completed {completed_24h} tasks with an average closure time of {avg_closure} hours. "
-    summary += f"Task completion velocity has decreased by {abs(velocity_change)}%, indicating potential bottlenecks. "
-    summary += f"There are {blocked} blocked tasks requiring attention."
-    
-    return jsonify({
-        'summary': summary,
-        'completed_24h': completed_24h,
-        'avg_closure_time': avg_closure,
-        'velocity_change': velocity_change,
-        'blocked_tasks': blocked
-    })
-
-@app.route('/api/ai/closure-performance', methods=['GET'])
-def get_closure_performance():
-    """Task closure performance metrics"""
-    return jsonify({
-        'current_avg': 30.1,
-        'previous_avg': 25.6,
-        'blocked_tasks': Task.query.filter_by(status='Blocked').count(),
-        'blocked_percentage': 30.0
-    })
-
-@app.route('/api/ai/due-compliance', methods=['GET'])
-def get_due_compliance():
-    """Due date compliance metrics"""
-    total_completed = Task.query.filter_by(status='Completed').count()
-    
-    # Mock data for overdue and on-time
-    overdue = 14
-    on_time = 23
-    
-    return jsonify({
-        'overdue': overdue,
-        'on_time': on_time,
-        'active_tasks': Task.query.filter_by(status='In Progress').count(),
-        'avg_active_time': 159.2
-    })
-
-@app.route('/api/ai/predictions', methods=['GET'])
-def get_predictions():
-    """Predictive analytics"""
-    return jsonify({
-        'sprint_completion': 94,
-        'next_week_workload': 'Medium',
-        'expected_tasks': 48,
-        'risk_level': 'Low',
-        'risk_description': 'No major bottlenecks'
-    })
-
-@app.route('/api/ai/team-benchmarking', methods=['GET'])
-def get_team_benchmarking():
-    """Team benchmarking data"""
-    teams = [
-        {
-            'name': 'Your Team',
-            'total_tasks': 178,
-            'velocity': 49,
-            'efficiency': 92,
-            'rank': 2,
-            'badge': None
-        },
-        {
-            'name': 'Alpha Team',
-            'total_tasks': 186,
-            'velocity': 51,
-            'efficiency': 94,
-            'rank': 1,
-            'badge': '🏆'
-        },
-        {
-            'name': 'Beta Team',
-            'total_tasks': 162,
-            'velocity': 44,
-            'efficiency': 88,
-            'rank': 3,
-            'badge': None
-        },
-        {
-            'name': 'Gamma Team',
-            'total_tasks': 160,
-            'velocity': 45,
-            'efficiency': 85,
-            'rank': 4,
-            'badge': None
-        }
-    ]
-    
-    return jsonify(teams)
-
-@app.route('/api/ai/productivity-trends', methods=['GET'])
-def get_productivity_trends():
-    """4-week productivity trends"""
-    weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-    
-    data = []
-    for week in weeks:
-        data.append({
-            'week': week,
-            'your_team': random.randint(35, 48),
-            'alpha_team': random.randint(40, 51),
-            'beta_team': random.randint(30, 44),
-            'gamma_team': random.randint(28, 45)
-        })
-    
-    return jsonify(data)
-
-@app.route('/api/ai/sentiment', methods=['GET'])
-def get_sentiment():
-    """Team communication sentiment analysis"""
-    return jsonify({
-        'positive': 75,
-        'neutral': 20,
-        'negative': 5,
-        'insight': 'Team morale appears positive. Keep up the good work and maintain open communication.'
-    })
-
-# ==================== QUERIES/CHAT ENDPOINTS ====================
-
-@app.route('/api/chat', methods=['POST'])
-def handle_chat():
-    """Handle conversational queries"""
-    data = request.get_json()
-    query = data.get('query', '').lower()
-    
-    # Simple pattern matching for demo
-    if 'bug' in query:
-        bugs_total = Task.query.filter(Task.tags.like('%bug%')).count()
-        bugs_closed = Task.query.filter(
-            Task.tags.like('%bug%'),
-            Task.status == 'Completed',
-            Task.completed_date >= datetime.now() - timedelta(days=7)
-        ).count()
-        bugs_open = Task.query.filter(
-            Task.tags.like('%bug%'),
-            Task.status.in_(['Open', 'In Progress'])
-        ).count()
-        
-        response = f"Currently tracking {bugs_total} bugs total. {bugs_closed} have been closed this week, and {bugs_open} are still open."
-    
-    elif 'task' in query or 'complete' in query:
-        completed = Task.query.filter_by(status='Completed').count()
-        response = f"Your team has completed {completed} tasks in total. Great progress!"
-    
-    elif 'progress' in query or 'status' in query:
-        in_progress = Task.query.filter_by(status='In Progress').count()
-        response = f"There are currently {in_progress} tasks in progress across the team."
-    
-    else:
-        response = "I'm here to help! Try asking about bugs, tasks, progress, or team performance."
-    
-    return jsonify({
-        'response': response,
-        'timestamp': datetime.now().strftime('%I:%M:%S %p')
-    })
-
 # ==================== SETTINGS ENDPOINTS ====================
 
 @app.route('/api/settings', methods=['GET'])
@@ -716,6 +547,76 @@ def natural_language_query():
         
         if not user_question:
             return jsonify({'error': 'Question is required'}), 400
+        
+        # Check for greetings
+        greetings = ['hi', 'hello', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening', 'sup', 'yo']
+        question_lower = user_question.lower()
+        
+        if any(greeting == question_lower or question_lower.startswith(greeting + ' ') for greeting in greetings):
+            return jsonify({
+                'success': True,
+                'question': user_question,
+                'response': "👋 Hi there! I'm your AI assistant designed specifically to help you query and analyze your team's **tasks** and **user** data.\n\n"
+                            "I can help you find information like:\n"
+                            "• Task statistics and status\n"
+                            "• User assignments and workload\n"
+                            "• Project progress and trends\n"
+                            "• Team performance metrics\n\n"
+                            "Just ask me anything about your tasks or team members! For example:\n"
+                            "- \"Show me all blocked tasks\"\n"
+                            "- \"Who has the most tasks?\"\n"
+                            "- \"List high priority tasks due this week\"",
+                'timestamp': datetime.now().strftime('%I:%M %p'),
+                'data': [],
+                'columns': [],
+                'count': 0
+            })
+        
+        # Check for off-topic questions
+        off_topic_keywords = [
+            'weather', 'recipe', 'movie', 'song', 'game', 'sports', 'news', 
+            'stock', 'price', 'restaurant', 'hotel', 'flight', 'travel',
+            'joke', 'story', 'poem', 'translate', 'meaning of life',
+            'python code', 'javascript', 'programming', 'algorithm',
+            'capital of', 'president', 'history', 'geography', 'write a',
+            'create a script', 'how to cook', 'best place', 'recommend'
+        ]
+        
+        # Check if question contains off-topic keywords but not task-related words
+        task_keywords = ['task', 'user', 'team', 'project', 'assignment', 'status', 'priority', 'completed', 'open', 'blocked', 'progress', 'assigned', 'work']
+        has_task_context = any(keyword in question_lower for keyword in task_keywords)
+        
+        # Simple off-topic detection
+        is_off_topic = False
+        
+        if not has_task_context:
+            for keyword in off_topic_keywords:
+                if keyword in question_lower:
+                    is_off_topic = True
+                    break
+            
+            # Special check for "what is" / "who is" followed by non-task-related words
+            if question_lower.startswith('what is') or question_lower.startswith('who is'):
+                # Check if the rest of the question is task-related
+                question_rest = question_lower.replace('what is', '').replace('who is', '').strip()
+                if not any(keyword in question_rest for keyword in task_keywords):
+                    is_off_topic = True
+        
+        if is_off_topic:
+            return jsonify({
+                'success': False,
+                'question': user_question,
+                'response': "❌ I'm specifically designed to work with your **task management and team productivity data**.\n\n"
+                            "I can only answer questions related to:\n"
+                            "• Tasks (status, priority, assignments, progress)\n"
+                            "• Users (team members, workload, performance)\n"
+                            "• Projects (Web Platform, Mobile App, API Services)\n\n"
+                            "Your question seems to be outside my scope. Please ask something about your tasks or team!",
+                'timestamp': datetime.now().strftime('%I:%M %p'),
+                'data': [],
+                'columns': [],
+                'count': 0
+            }), 400
         
         # Database schema for context
         schema = """
@@ -760,24 +661,32 @@ IMPORTANT NOTES:
         # System prompt for Gemini
         system_prompt = """You are an expert SQL query generator for a team productivity dashboard.
 
+CRITICAL: You can ONLY work with the following database tables: 'users' and 'tasks'.
+If the user asks about anything not related to these tables, return: ERROR_OFF_TOPIC
+
 Your task:
-1. Convert the user's natural language question into a valid SQLite SQL query
-2. Return ONLY the SQL query, nothing else - no explanations, no markdown, no code blocks
-3. Make sure the query is safe and optimized
-4. Use proper JOINs when needed
-5. Format dates correctly for SQLite
+1. First, verify the question is about tasks or users data
+2. Convert the user's natural language question into a valid SQLite SQL query
+3. Return ONLY the SQL query, nothing else - no explanations, no markdown, no code blocks
+4. Make sure the query is safe and optimized (only SELECT queries allowed)
+5. Use proper JOINs when needed
 6. Handle aggregations (COUNT, SUM, AVG) when needed
 7. Use LIMIT for queries that might return many rows (default LIMIT 50)
 
 Rules:
-- Return ONLY the SQL query
-- No SELECT * - specify columns
+- Return ONLY the SQL query (one line, no line breaks)
+- No SELECT * - specify columns explicitly
 - Always include relevant column names
-- Use aliases for better readability
+- Use aliases for better readability (u for users, t for tasks)
 - For counting, use COUNT(*) or COUNT(column_name)
 - For user-related queries, include user name via JOIN
-- For date comparisons, use DATE() function
+- For date comparisons, use DATE() or datetime functions
 - Status must match exactly: 'Open', 'In Progress', 'Completed', 'Blocked'
+- Priority must match exactly: 'High', 'Medium', 'Low'
+- Projects must match exactly: 'Web Platform', 'Mobile App', 'API Services'
+- For "recent" or "latest", use ORDER BY created_date DESC
+- For "overdue", compare due_date < current date
+- Always add appropriate ORDER BY for better results
 
 Example outputs:
 "SELECT name, COUNT(t.task_id) as task_count FROM users u LEFT JOIN tasks t ON u.user_id = t.assigned_to GROUP BY u.user_id, u.name ORDER BY task_count DESC LIMIT 10"
@@ -785,6 +694,8 @@ Example outputs:
 "SELECT status, COUNT(*) as count FROM tasks GROUP BY status"
 
 "SELECT u.name, t.task_name, t.priority FROM tasks t JOIN users u ON t.assigned_to = u.user_id WHERE t.status = 'Blocked' ORDER BY t.created_date DESC LIMIT 20"
+
+"SELECT u.name, COUNT(CASE WHEN t.status = 'Completed' THEN 1 END) as completed, COUNT(t.task_id) as total FROM users u LEFT JOIN tasks t ON u.user_id = t.assigned_to GROUP BY u.user_id, u.name ORDER BY completed DESC LIMIT 10"
 """
         
         # Prepare full prompt
@@ -811,6 +722,23 @@ SQL QUERY:"""
         # Remove any trailing semicolons
         sql_query = sql_query.rstrip(';')
         
+        # Check if Gemini detected an off-topic question
+        if 'ERROR_OFF_TOPIC' in sql_query.upper():
+            return jsonify({
+                'success': False,
+                'question': user_question,
+                'response': "❌ I'm specifically designed to work with your **task management and team productivity data**.\n\n"
+                            "I can only answer questions related to:\n"
+                            "• Tasks (status, priority, assignments, progress)\n"
+                            "• Users (team members, workload, performance)\n"
+                            "• Projects (Web Platform, Mobile App, API Services)\n\n"
+                            "Your question seems to be outside my scope. Please ask something about your tasks or team!",
+                'timestamp': datetime.now().strftime('%I:%M %p'),
+                'data': [],
+                'columns': [],
+                'count': 0
+            }), 400
+        
         # Log SQL query for debugging (not shown to user)
         print(f"\n{'='*80}")
         print(f"📊 QUERY GENERATED")
@@ -822,8 +750,13 @@ SQL QUERY:"""
         # Validate that it's a SELECT query (safety check)
         if not sql_query.upper().startswith('SELECT'):
             return jsonify({
-                'error': 'Only SELECT queries are allowed for safety reasons.',
-                'question': user_question
+                'success': False,
+                'question': user_question,
+                'response': "⚠️ I can only execute SELECT queries for safety reasons. Please rephrase your question to retrieve data.",
+                'timestamp': datetime.now().strftime('%I:%M %p'),
+                'data': [],
+                'columns': [],
+                'count': 0
             }), 400
         
         # Execute the query
@@ -916,6 +849,479 @@ def generate_response_summary(question, data, sql_query):
                 response_parts.append(f"\n💡 *Plus {remaining} more results. Click 'View All Results' to see everything in a table.*")
     
     return "\n".join(response_parts)
+
+
+# ==================== AI INSIGHTS ENDPOINTS ====================
+
+@app.route('/api/ai/summary', methods=['GET'])
+def ai_summary():
+    """Generate AI-powered summary based on filter"""
+    filter_type = request.args.get('filter', 'today').lower()
+    now = datetime.now()
+    
+    # Determine time period
+    if filter_type == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        period_name = "24 hours"
+    elif filter_type == 'week':
+        start_date = now - timedelta(days=7)
+        period_name = "7 days"
+    elif filter_type == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        period_name = "this month"
+    else:
+        start_date = datetime(2000, 1, 1)
+        period_name = "all time"
+    
+    # Get tasks in period
+    tasks = Task.query.filter(Task.created_date >= start_date).all()
+    completed_tasks = [t for t in tasks if t.status == 'Completed']
+    blocked_tasks = [t for t in tasks if t.status == 'Blocked']
+    
+    # Calculate average closure time (hours from created to completed)
+    closure_times = []
+    for task in completed_tasks:
+        if task.completed_date and task.created_date:
+            hours = (task.completed_date - task.created_date).total_seconds() / 3600
+            closure_times.append(hours)
+    
+    avg_closure = sum(closure_times) / len(closure_times) if closure_times else 0
+    
+    # Calculate velocity change (compare with previous period)
+    if filter_type == 'today':
+        prev_start = start_date - timedelta(days=1)
+        prev_end = start_date
+    elif filter_type == 'week':
+        prev_start = start_date - timedelta(days=7)
+        prev_end = start_date
+    elif filter_type == 'month':
+        prev_month = now.month - 1 if now.month > 1 else 12
+        prev_year = now.year if now.month > 1 else now.year - 1
+        prev_start = now.replace(month=prev_month, year=prev_year, day=1, hour=0, minute=0, second=0)
+        prev_end = start_date
+    else:
+        prev_start = datetime(2000, 1, 1)
+        prev_end = start_date
+    
+    prev_completed = Task.query.filter(
+        Task.created_date >= prev_start,
+        Task.created_date < prev_end,
+        Task.status == 'Completed'
+    ).count()
+    
+    velocity_change = 0
+    if prev_completed > 0:
+        velocity_change = ((len(completed_tasks) - prev_completed) / prev_completed) * 100
+    
+    # Generate summary text
+    trend = "increased" if velocity_change > 0 else "decreased" if velocity_change < 0 else "remained stable"
+    summary = (
+        f"Over the last {period_name}, your team completed {len(completed_tasks)} tasks "
+        f"with an average closure time of {avg_closure:.1f} hours. "
+        f"Task completion velocity has {trend} by {abs(velocity_change):.1f}%, "
+        f"{'indicating potential bottlenecks' if velocity_change < 0 else 'showing positive momentum'}. "
+        f"There are {len(blocked_tasks)} blocked tasks requiring attention."
+    )
+    
+    return jsonify({'summary': summary})
+
+
+@app.route('/api/ai/closure-performance', methods=['GET'])
+def closure_performance():
+    """Calculate task closure performance metrics"""
+    filter_type = request.args.get('filter', 'today').lower()
+    now = datetime.now()
+    
+    # Determine current period
+    if filter_type == 'today':
+        current_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        prev_start = current_start - timedelta(days=1)
+        prev_end = current_start
+    elif filter_type == 'week':
+        current_start = now - timedelta(days=7)
+        prev_start = current_start - timedelta(days=7)
+        prev_end = current_start
+    elif filter_type == 'month':
+        current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        prev_month = now.month - 1 if now.month > 1 else 12
+        prev_year = now.year if now.month > 1 else now.year - 1
+        prev_start = now.replace(month=prev_month, year=prev_year, day=1, hour=0, minute=0, second=0)
+        prev_end = current_start
+    else:
+        # All time - split in half
+        all_tasks = Task.query.order_by(Task.created_date).all()
+        if len(all_tasks) > 0:
+            mid_point = len(all_tasks) // 2
+            current_start = all_tasks[mid_point].created_date
+            prev_start = all_tasks[0].created_date
+            prev_end = current_start
+        else:
+            current_start = datetime(2000, 1, 1)
+            prev_start = datetime(2000, 1, 1)
+            prev_end = current_start
+    
+    # Calculate current period closure time
+    current_completed = Task.query.filter(
+        Task.created_date >= current_start,
+        Task.status == 'Completed',
+        Task.completed_date.isnot(None)
+    ).all()
+    
+    current_times = []
+    for task in current_completed:
+        hours = (task.completed_date - task.created_date).total_seconds() / 3600
+        current_times.append(hours)
+    
+    current_avg = sum(current_times) / len(current_times) if current_times else 0
+    
+    # Calculate previous period closure time
+    prev_completed = Task.query.filter(
+        Task.created_date >= prev_start,
+        Task.created_date < prev_end,
+        Task.status == 'Completed',
+        Task.completed_date.isnot(None)
+    ).all()
+    
+    prev_times = []
+    for task in prev_completed:
+        hours = (task.completed_date - task.created_date).total_seconds() / 3600
+        prev_times.append(hours)
+    
+    prev_avg = sum(prev_times) / len(prev_times) if prev_times else 0
+    
+    # Get blocked tasks
+    blocked_tasks = Task.query.filter(
+        Task.created_date >= current_start,
+        Task.status == 'Blocked'
+    ).count()
+    
+    total_tasks = Task.query.filter(Task.created_date >= current_start).count()
+    blocked_percentage = (blocked_tasks / total_tasks * 100) if total_tasks > 0 else 0
+    
+    return jsonify({
+        'current_avg': round(current_avg, 1),
+        'previous_avg': round(prev_avg, 1),
+        'blocked_tasks': blocked_tasks,
+        'blocked_percentage': round(blocked_percentage, 0)
+    })
+
+
+@app.route('/api/ai/due-compliance', methods=['GET'])
+def due_compliance():
+    """Calculate due date compliance metrics"""
+    filter_type = request.args.get('filter', 'today').lower()
+    now = datetime.now()
+    
+    # Determine time period
+    if filter_type == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_type == 'week':
+        start_date = now - timedelta(days=7)
+    elif filter_type == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        start_date = datetime(2000, 1, 1)
+    
+    # Get tasks with due dates in period
+    tasks_with_due = Task.query.filter(
+        Task.created_date >= start_date,
+        Task.due_date.isnot(None)
+    ).all()
+    
+    overdue = 0
+    on_time = 0
+    
+    for task in tasks_with_due:
+        if task.status == 'Completed' and task.completed_date:
+            # Check if completed before due date
+            if task.completed_date <= task.due_date:
+                on_time += 1
+            else:
+                overdue += 1
+        elif task.status != 'Completed':
+            # Check if currently overdue
+            if task.due_date < now:
+                overdue += 1
+            else:
+                on_time += 1
+    
+    # Get in-progress tasks
+    in_progress = Task.query.filter(
+        Task.created_date >= start_date,
+        Task.status == 'In Progress'
+    ).all()
+    
+    # Calculate average time in progress
+    active_times = []
+    for task in in_progress:
+        if task.start_date:
+            hours = (now - task.start_date).total_seconds() / 3600
+            active_times.append(hours)
+    
+    avg_active = sum(active_times) / len(active_times) if active_times else 0
+    
+    return jsonify({
+        'overdue': overdue,
+        'on_time': on_time,
+        'active_tasks': len(in_progress),
+        'avg_active_time': round(avg_active, 1)
+    })
+
+
+@app.route('/api/ai/predictions', methods=['GET'])
+def predictions():
+    """Generate predictive analytics"""
+    filter_type = request.args.get('filter', 'today').lower()
+    now = datetime.now()
+    
+    # Determine time period
+    if filter_type == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        days_in_period = 1
+    elif filter_type == 'week':
+        start_date = now - timedelta(days=7)
+        days_in_period = 7
+    elif filter_type == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        days_in_period = now.day
+    else:
+        oldest_task = Task.query.order_by(Task.created_date).first()
+        start_date = oldest_task.created_date if oldest_task else now
+        days_in_period = (now - start_date).days or 1
+    
+    # Calculate velocity (tasks per day)
+    completed_tasks = Task.query.filter(
+        Task.created_date >= start_date,
+        Task.status == 'Completed'
+    ).count()
+    
+    velocity = completed_tasks / days_in_period if days_in_period > 0 else 0
+    
+    # Calculate sprint completion (assuming 2-week sprint)
+    sprint_duration = 14
+    open_tasks = Task.query.filter(
+        Task.created_date >= start_date,
+        Task.status.in_(['Open', 'In Progress'])
+    ).count()
+    
+    expected_completion = velocity * sprint_duration
+    sprint_completion = min(100, (expected_completion / max(open_tasks, 1)) * 100)
+    
+    # Predict next week workload
+    next_week_tasks = int(velocity * 7)
+    if next_week_tasks < 30:
+        workload = "Low"
+    elif next_week_tasks < 50:
+        workload = "Medium"
+    else:
+        workload = "High"
+    
+    # Risk assessment
+    blocked_count = Task.query.filter(
+        Task.created_date >= start_date,
+        Task.status == 'Blocked'
+    ).count()
+    
+    total_active = Task.query.filter(
+        Task.created_date >= start_date,
+        Task.status.in_(['Open', 'In Progress', 'Blocked'])
+    ).count()
+    
+    blocked_ratio = blocked_count / max(total_active, 1)
+    
+    if blocked_ratio > 0.15:
+        risk_level = "High"
+        risk_desc = "Significant bottlenecks detected"
+    elif blocked_ratio > 0.08:
+        risk_level = "Medium"
+        risk_desc = "Some blockers present"
+    else:
+        risk_level = "Low"
+        risk_desc = "No major bottlenecks"
+    
+    return jsonify({
+        'sprint_completion': round(sprint_completion, 0),
+        'next_week_workload': workload,
+        'expected_tasks': next_week_tasks,
+        'risk_level': risk_level,
+        'risk_description': risk_desc
+    })
+
+
+@app.route('/api/ai/team-benchmarking', methods=['GET'])
+def team_benchmarking():
+    """Compare team performance"""
+    filter_type = request.args.get('filter', 'today').lower()
+    now = datetime.now()
+    
+    # Determine time period
+    if filter_type == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        weeks = 1 / 7
+    elif filter_type == 'week':
+        start_date = now - timedelta(days=7)
+        weeks = 1
+    elif filter_type == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        weeks = now.day / 7
+    else:
+        oldest_task = Task.query.order_by(Task.created_date).first()
+        start_date = oldest_task.created_date if oldest_task else now
+        weeks = max(1, (now - start_date).days / 7)
+    
+    # Get all teams
+    teams_data = db.session.query(User.team).distinct().all()
+    team_stats = []
+    
+    for (team_name,) in teams_data:
+        if not team_name:
+            continue
+        
+        # Get users in team
+        team_users = User.query.filter_by(team=team_name).all()
+        user_ids = [u.user_id for u in team_users]
+        
+        # Get tasks for team
+        team_tasks = Task.query.filter(
+            Task.created_date >= start_date,
+            Task.assigned_to.in_(user_ids)
+        ).all()
+        
+        total_tasks = len(team_tasks)
+        completed_tasks = sum(1 for t in team_tasks if t.status == 'Completed')
+        
+        # Calculate velocity (tasks per week)
+        velocity = int(total_tasks / weeks) if weeks > 0 else total_tasks
+        
+        # Calculate efficiency (completion rate)
+        efficiency = int((completed_tasks / total_tasks * 100)) if total_tasks > 0 else 0
+        
+        team_stats.append({
+            'name': team_name,
+            'total_tasks': total_tasks,
+            'velocity': velocity,
+            'efficiency': efficiency,
+            'rank': 0  # Will be assigned below
+        })
+    
+    # Sort by velocity and assign ranks
+    team_stats.sort(key=lambda x: x['velocity'], reverse=True)
+    for i, team in enumerate(team_stats):
+        team['rank'] = i + 1
+        if i == 0:
+            team['badge'] = '🏆'
+        else:
+            team['badge'] = None
+    
+    return jsonify(team_stats)
+
+
+@app.route('/api/ai/productivity-trends', methods=['GET'])
+def productivity_trends():
+    """Get 4-week productivity trends for all teams"""
+    now = datetime.now()
+    
+    # Get teams
+    teams_data = db.session.query(User.team).distinct().all()
+    
+    # Prepare 4 weeks of data
+    trends = []
+    for week in range(1, 5):
+        week_end = now - timedelta(days=(week - 1) * 7)
+        week_start = week_end - timedelta(days=7)
+        
+        week_data = {
+            'week': f'Week {5 - week}',
+            'your_team': 0,
+            'alpha_team': 0,
+            'beta_team': 0,
+            'gamma_team': 0
+        }
+        
+        for (team_name,) in teams_data:
+            if not team_name:
+                continue
+                
+            team_users = User.query.filter_by(team=team_name).all()
+            user_ids = [u.user_id for u in team_users]
+            
+            completed = Task.query.filter(
+                Task.completed_date >= week_start,
+                Task.completed_date < week_end,
+                Task.assigned_to.in_(user_ids),
+                Task.status == 'Completed'
+            ).count()
+            
+            # Map to chart keys
+            if team_name == 'Your Team':
+                week_data['your_team'] = completed
+            elif team_name == 'Alpha Team':
+                week_data['alpha_team'] = completed
+            elif team_name == 'Beta Team':
+                week_data['beta_team'] = completed
+            elif team_name == 'Gamma Team':
+                week_data['gamma_team'] = completed
+        
+        trends.append(week_data)
+    
+    return jsonify(trends)
+
+
+@app.route('/api/ai/sentiment', methods=['GET'])
+def sentiment():
+    """Analyze team sentiment from comments"""
+    # This is a simplified version - in production, use NLP
+    # For now, we'll generate realistic sentiment based on task status
+    
+    filter_type = request.args.get('filter', 'today').lower()
+    now = datetime.now()
+    
+    # Determine time period
+    if filter_type == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_type == 'week':
+        start_date = now - timedelta(days=7)
+    elif filter_type == 'month':
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        start_date = datetime(2000, 1, 1)
+    
+    tasks = Task.query.filter(Task.created_date >= start_date).all()
+    
+    # Simple sentiment based on task status and completion
+    total = len(tasks)
+    if total == 0:
+        return jsonify({
+            'positive': 50,
+            'neutral': 30,
+            'negative': 20,
+            'insight': 'Not enough data for sentiment analysis.'
+        })
+    
+    completed = sum(1 for t in tasks if t.status == 'Completed')
+    in_progress = sum(1 for t in tasks if t.status == 'In Progress')
+    blocked = sum(1 for t in tasks if t.status == 'Blocked')
+    
+    # Calculate sentiment percentages
+    completion_rate = completed / total
+    positive = int(min(90, completion_rate * 100 + 20))
+    negative = int(max(5, blocked / total * 100 * 3))
+    neutral = 100 - positive - negative
+    
+    # Generate insight
+    if positive > 70:
+        insight = "Team morale appears positive. Keep up the good work and maintain open communication."
+    elif positive > 50:
+        insight = "Team sentiment is generally positive with room for improvement."
+    else:
+        insight = "Team may be facing challenges. Consider team check-ins and addressing blockers."
+    
+    return jsonify({
+        'positive': positive,
+        'neutral': neutral,
+        'negative': negative,
+        'insight': insight
+    })
 
 
 # ==================== HEALTH CHECK ====================

@@ -12,7 +12,7 @@ import {
 import { Sparkles, TrendingUp, AlertTriangle, CheckCircle, Users } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
-function AIInsights() {
+function AIInsights({ timeFilter = 'today' }) {
   const [summary, setSummary] = useState(null);
   const [closure, setClosure] = useState(null);
   const [compliance, setCompliance] = useState(null);
@@ -24,18 +24,19 @@ function AIInsights() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [timeFilter]);
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [summaryRes, closureRes, complianceRes, predictionsRes, teamsRes, trendsRes, sentimentRes] = await Promise.all([
-        getAISummary(),
-        getClosurePerformance(),
-        getDueCompliance(),
-        getPredictions(),
-        getTeamBenchmarking(),
-        getProductivityTrends(),
-        getSentiment()
+        getAISummary(timeFilter),
+        getClosurePerformance(timeFilter),
+        getDueCompliance(timeFilter),
+        getPredictions(timeFilter),
+        getTeamBenchmarking(timeFilter),
+        getProductivityTrends(timeFilter),
+        getSentiment(timeFilter)
       ]);
       
       setSummary(summaryRes.data);
@@ -53,12 +54,51 @@ function AIInsights() {
   };
 
   if (loading) {
-    return <div className="loading">Loading AI insights...</div>;
+    return (
+      <div className="ai-insights-page">
+        <h1 className="page-title">AI Insights</h1>
+        <div className="loading-spinner">Loading AI insights...</div>
+      </div>
+    );
   }
+
+  const getFilterLabel = () => {
+    switch(timeFilter) {
+      case 'today': return 'Today';
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      case 'all': return 'All Time';
+      default: return 'Today';
+    }
+  };
+
+  const generateBenchmarkingInsight = (teams) => {
+    if (teams.length === 0) return '';
+    
+    // Find "Your Team"
+    const yourTeam = teams.find(t => t.name === 'Your Team');
+    const topTeam = teams.find(t => t.rank === 1);
+    
+    if (!yourTeam) return '';
+    
+    if (yourTeam.rank === 1) {
+      return `Congratulations! Your team ranks #1 with ${yourTeam.velocity} tasks/week velocity and ${yourTeam.efficiency}% efficiency. Keep up the excellent work!`;
+    } else {
+      const tasksDifference = topTeam.velocity - yourTeam.velocity;
+      const efficiencyDiff = topTeam.efficiency - yourTeam.efficiency;
+      
+      return `Your team ranks #${yourTeam.rank} with ${tasksDifference} tasks/week behind ${topTeam.name}. ` +
+             `Your velocity is ${yourTeam.velocity}/week with ${yourTeam.efficiency}% efficiency. ` +
+             `Focus on ${efficiencyDiff > 5 ? 'efficiency improvements' : 'increasing velocity'} to reach #1 position.`;
+    }
+  };
 
   return (
     <div className="ai-insights-page">
-      <h1 className="page-title">AI Insights</h1>
+      <div className="page-header">
+        <h1 className="page-title">AI Insights</h1>
+        <div className="filter-badge">Showing: {getFilterLabel()}</div>
+      </div>
 
       {/* AI Summary */}
       <div className="ai-summary-card">
@@ -236,13 +276,15 @@ function AIInsights() {
         </div>
 
         {/* Insights */}
-        <div className="bench-insights">
-          <Sparkles size={20} color="#10b981" />
-          <div>
-            <h4>Benchmarking Insights</h4>
-            <p>Your team ranks #2 with 8 tasks behind Alpha Team. Velocity increased 22% over 4 weeks, outpacing Beta (+16%) and Gamma (+29%). Focus on efficiency improvements to reach #1 position.</p>
+        {teams.length > 0 && (
+          <div className="bench-insights">
+            <Sparkles size={20} color="#10b981" />
+            <div>
+              <h4>Benchmarking Insights</h4>
+              <p>{generateBenchmarkingInsight(teams)}</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Sentiment Analysis */}
