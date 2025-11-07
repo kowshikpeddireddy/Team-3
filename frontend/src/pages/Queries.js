@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './Queries.css';
 import { sendChatQuery } from '../api/client';
-import { Send, Sparkles } from 'lucide-react';
+import { Send, Sparkles, X, Table } from 'lucide-react';
 
 function Queries() {
   const [messages, setMessages] = useState([
     {
       type: 'bot',
-      text: "Hello! I'm your AI assistant. Ask me anything about your team's productivity, tasks, or performance metrics.\n\nTry questions like:\n• How many bugs did we close this sprint?\n• What's our team velocity?\n• Show me blocked tasks",
+      text: "Hello! I'm your AI assistant powered by Gemini 2.5 Pro. Ask me anything about your tasks and users in natural language!\n\nTry questions like:\n• How many open tasks do we have?\n• Who has the most tasks?\n• Show me all blocked tasks\n• Which team has the most completed tasks?\n• What are high priority tasks?\n• List all users in Alpha Team\n• Show tasks created this week",
       timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState(null);
+  const messagesEndRef = useRef(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -32,7 +40,11 @@ function Queries() {
       const botMessage = {
         type: 'bot',
         text: response.data.response,
-        timestamp: response.data.timestamp
+        timestamp: response.data.timestamp,
+        data: response.data.data,  // Store full data
+        columns: response.data.columns,  // Store columns
+        count: response.data.count,  // Store count
+        question: response.data.question  // Store question
       };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
@@ -46,6 +58,11 @@ function Queries() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewAll = (message) => {
+    setModalData(message);
+    setShowModal(true);
   };
 
   const handleKeyPress = (e) => {
@@ -73,6 +90,15 @@ function Queries() {
             <div key={index} className={`message ${message.type}`}>
               <div className="message-content">
                 <p>{message.text}</p>
+                {message.type === 'bot' && message.count > 5 && (
+                  <button 
+                    className="view-all-btn"
+                    onClick={() => handleViewAll(message)}
+                  >
+                    <Table size={16} />
+                    View All {message.count} Results
+                  </button>
+                )}
                 <span className="message-time">{message.timestamp}</span>
               </div>
             </div>
@@ -89,6 +115,7 @@ function Queries() {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="chat-input-container">
@@ -106,6 +133,52 @@ function Queries() {
           </button>
         </div>
       </div>
+
+      {/* Results Modal */}
+      {showModal && modalData && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <h3>Query Results</h3>
+                <p className="modal-question">{modalData.question}</p>
+              </div>
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="results-info">
+                <span className="results-count">
+                  {modalData.count} {modalData.count === 1 ? 'Result' : 'Results'}
+                </span>
+              </div>
+
+              <div className="results-table-container">
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      {modalData.columns && modalData.columns.map((col, idx) => (
+                        <th key={idx}>{col.replace(/_/g, ' ').toUpperCase()}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalData.data && modalData.data.map((row, idx) => (
+                      <tr key={idx}>
+                        {modalData.columns.map((col, colIdx) => (
+                          <td key={colIdx}>{row[col] !== null && row[col] !== undefined ? row[col] : 'N/A'}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

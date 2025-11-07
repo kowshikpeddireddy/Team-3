@@ -4,7 +4,7 @@ import { getOverview, getDistribution, getTrends, getTeamPerformance } from '../
 import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Clock } from 'lucide-react';
 
-function Overview() {
+function Overview({ timeFilter }) {
   const [metrics, setMetrics] = useState(null);
   const [distribution, setDistribution] = useState([]);
   const [trends, setTrends] = useState([]);
@@ -16,15 +16,15 @@ function Overview() {
     // Auto-refresh every 10 seconds
     const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [timeFilter]); // Re-fetch when filter changes
 
   const fetchData = async () => {
     try {
       const [metricsRes, distRes, trendsRes, teamRes] = await Promise.all([
-        getOverview(),
-        getDistribution(),
-        getTrends(),
-        getTeamPerformance()
+        getOverview(timeFilter),
+        getDistribution(timeFilter),
+        getTrends(timeFilter),
+        getTeamPerformance(timeFilter)
       ]);
       
       setMetrics(metricsRes.data);
@@ -38,40 +38,92 @@ function Overview() {
     }
   };
 
-  if (loading) {
-    return <div className="loading">Loading dashboard...</div>;
+  const getFilterLabel = () => {
+    switch(timeFilter) {
+      case 'today': return 'Today';
+      case 'week': return 'This Week';
+      case 'month': return 'This Month';
+      case 'all': return 'All Time';
+      default: return 'Today';
+    }
+  };
+
+  const getTrendTitle = () => {
+    switch(timeFilter) {
+      case 'today': return '7-Day Trend Analysis';
+      case 'week': return 'Weekly Trend Analysis';
+      case 'month': return '30-Day Trend Analysis';
+      case 'all': return 'Trend Analysis';
+      default: return 'Trend Analysis';
+    }
+  };
+
+  const getClosedLabel = () => {
+    switch(timeFilter) {
+      case 'today': return 'Closed Today';
+      case 'week': return 'Closed This Week';
+      case 'month': return 'Closed This Month';
+      case 'all': return 'Total Closed';
+      default: return 'Closed Today';
+    }
+  };
+
+  if (loading && !metrics) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading dashboard data...</p>
+      </div>
+    );
   }
 
   return (
     <div className="overview-page">
-      <h1 className="page-title">Overview</h1>
+      <div className="page-header">
+        <h1 className="page-title">Overview</h1>
+        <div className="filter-badge">
+          <span className="filter-icon">📊</span>
+          <span className="filter-text">Showing: {getFilterLabel()}</span>
+          {loading && <div className="filter-loading-dot"></div>}
+        </div>
+      </div>
+      
+      {loading && metrics ? (
+        <div className="overlay-loading">
+          <div className="loading-spinner-small"></div>
+        </div>
+      ) : null}
       
       {/* Metric Cards */}
       <div className="metrics-grid">
         <MetricCard
           title="Open Tasks"
-          value={metrics.open_tasks}
-          change={metrics.open_change}
+          value={metrics?.open_tasks || 0}
+          change={metrics?.open_change || 0}
           color="blue"
+          loading={loading}
         />
         <MetricCard
           title="In Progress"
-          value={metrics.in_progress}
-          change={metrics.progress_change}
+          value={metrics?.in_progress || 0}
+          change={metrics?.progress_change || 0}
           color="green"
+          loading={loading}
         />
         <MetricCard
-          title="Closed Today"
-          value={metrics.completed_today}
-          change={metrics.today_change}
+          title={getClosedLabel()}
+          value={metrics?.completed_today || 0}
+          change={metrics?.today_change || 0}
           color="green"
-          subtitle="3:00 - 4:00 PM"
+          subtitle={timeFilter === 'today' ? '3:00 - 4:00 PM' : null}
+          loading={loading}
         />
         <MetricCard
           title="Completion Rate"
-          value={`${metrics.completion_rate}%`}
-          change={metrics.rate_change}
+          value={`${metrics?.completion_rate || 0}%`}
+          change={metrics?.rate_change || 0}
           color="green"
+          loading={loading}
         />
       </div>
 
@@ -79,7 +131,10 @@ function Overview() {
       <div className="charts-row">
         {/* Task Distribution */}
         <div className="chart-card">
-          <h3 className="chart-title">Task Distribution ({metrics.total_tasks})</h3>
+          <h3 className="chart-title">
+            Task Distribution ({metrics?.total_tasks || 0})
+            {loading && <span className="loading-text"> • Updating...</span>}
+          </h3>
           <div className="pie-chart-container">
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -110,9 +165,12 @@ function Overview() {
           </div>
         </div>
 
-        {/* 7-Day Trend Analysis */}
+        {/* Trend Analysis */}
         <div className="chart-card">
-          <h3 className="chart-title">7-Day Trend Analysis</h3>
+          <h3 className="chart-title">
+            {getTrendTitle()}
+            {loading && <span className="loading-text"> • Updating...</span>}
+          </h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trends}>
               <XAxis dataKey="date" stroke="#6b7280" />
@@ -163,7 +221,10 @@ function Overview() {
 
       {/* Team Performance */}
       <div className="chart-card full-width">
-        <h3 className="chart-title">Team Performance</h3>
+        <h3 className="chart-title">
+          Team Performance
+          {loading && <span className="loading-text"> • Updating...</span>}
+        </h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={teamPerformance}>
             <XAxis dataKey="name" stroke="#6b7280" />
@@ -182,12 +243,12 @@ function Overview() {
   );
 }
 
-function MetricCard({ title, value, change, color, subtitle }) {
+function MetricCard({ title, value, change, color, subtitle, loading }) {
   const isPositive = change > 0;
   const isNegative = change < 0;
   
   return (
-    <div className={`metric-card ${color}`}>
+    <div className={`metric-card ${color} ${loading ? 'loading' : ''}`}>
       <div className="metric-header">
         <span className="metric-title">{title}</span>
       </div>
@@ -195,11 +256,12 @@ function MetricCard({ title, value, change, color, subtitle }) {
       {subtitle && <div className="metric-subtitle"><Clock size={14} /> {subtitle}</div>}
       <div className={`metric-change ${isPositive ? 'positive' : isNegative ? 'negative' : ''}`}>
         {isPositive ? <TrendingUp size={14} /> : isNegative ? <TrendingDown size={14} /> : null}
-        <span>{Math.abs(change)}% vs last week</span>
+        <span>{Math.abs(change)}% vs last period</span>
       </div>
     </div>
   );
 }
 
 export default Overview;
+
 

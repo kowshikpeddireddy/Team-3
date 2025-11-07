@@ -7,7 +7,7 @@
 cd /Users/kowshik/Desktop/Hackathon/backend
 python3 app.py
 ```
-**URL:** http://localhost:5000
+**URL:** http://localhost:5001
 
 ### Start Frontend
 ```bash

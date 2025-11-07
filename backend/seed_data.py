@@ -162,15 +162,38 @@ def generate_tasks():
         tasks = []
         num_tasks = 2000
         
-        print(f"⏳ Generating {num_tasks} tasks with realistic data...")
+        # Distribute tasks across time periods:
+        # 10% today, 20% this week, 30% this month, 40% older
+        today_tasks = int(num_tasks * 0.10)      # 200 tasks
+        week_tasks = int(num_tasks * 0.20)       # 400 tasks
+        month_tasks = int(num_tasks * 0.30)      # 600 tasks
+        # older_tasks = remaining (800 tasks)
+        
+        print(f"⏳ Generating {num_tasks} tasks with realistic time distribution...")
+        print(f"   📅 Today: {today_tasks} tasks")
+        print(f"   📅 This week: {week_tasks} tasks")
+        print(f"   📅 This month: {month_tasks} tasks")
+        print(f"   📅 Older: {num_tasks - today_tasks - week_tasks - month_tasks} tasks")
         
         for idx in range(1, num_tasks + 1):
             # Cycle through templates and add variation
             template = task_templates[(idx - 1) % len(task_templates)]
             status = random.choice(statuses)
             
-            # More realistic time ranges: 1-90 days ago
-            days_ago = random.randint(1, 90)
+            # Distribute tasks across time periods
+            if idx <= today_tasks:
+                # Today (0 days ago, different hours)
+                days_ago = 0
+            elif idx <= today_tasks + week_tasks:
+                # This week (1-7 days ago)
+                days_ago = random.randint(1, 7)
+            elif idx <= today_tasks + week_tasks + month_tasks:
+                # This month (8-30 days ago)
+                days_ago = random.randint(8, 30)
+            else:
+                # Older (31-90 days ago)
+                days_ago = random.randint(31, 90)
+            
             created_date = datetime.now() - timedelta(days=days_ago)
             
             # Add some time variation (different times of day)
