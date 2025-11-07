@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Tasks.css';
 import { getTasks, getUsers, getProjectStats } from '../api/client';
 import { Search, Upload, TrendingUp, TrendingDown } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 function Tasks() {
-  const [tasks, setTasks] = useState([]);
+  const [, setTasks] = useState([]); // Removed unused 'tasks' variable
   const [users, setUsers] = useState([]);
   const [projectStats, setProjectStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,11 +13,8 @@ function Tasks() {
   const [statusFilter, setStatusFilter] = useState('All Tasks');
   const [showUpload, setShowUpload] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [statusFilter]);
-
-  const fetchData = async () => {
+  // Wrap fetchData in useCallback to avoid infinite re-renders
+  const fetchData = useCallback(async () => {
     try {
       const filters = statusFilter !== 'All Tasks' ? { status: statusFilter } : {};
       const [tasksRes, usersRes, statsRes] = await Promise.all([
@@ -34,7 +31,11 @@ function Tasks() {
       console.error('Error fetching tasks:', error);
       setLoading(false);
     }
-  };
+  }, [statusFilter]); // Add statusFilter as dependency
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]); // Now fetchData is stable due to useCallback
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -246,4 +247,3 @@ function getAvatarColor(initials) {
 }
 
 export default Tasks;
-
