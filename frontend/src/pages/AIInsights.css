@@ -1,0 +1,396 @@
+.ai-insights-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* AI Summary */
+.ai-summary-card {
+  background: linear-gradient(135deg, #1a2a3a 0%, #1a1a2e 100%);
+  border: 1px solid #2a2a3e;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+}
+
+.summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-content h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.summary-content p {
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+/* Metrics Row */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.metric-box {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+}
+
+.metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.metric-box h4 {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.metric-values {
+  display: flex;
+  gap: 20px;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metric-item .label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-item .value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.metric-item .value.danger {
+  color: #ef4444;
+}
+
+.metric-item .value.success {
+  color: #10b981;
+}
+
+/* Predictions */
+.predictions-card {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.predictions-card h3 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.prediction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.prediction-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pred-label {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #0f0f1a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  transition: width 0.5s ease;
+}
+
+.pred-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pred-value-large {
+  font-size: 28px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pred-value-large.success {
+  color: #10b981;
+}
+
+.pred-detail {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Benchmarking */
+.benchmarking-card {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.bench-header {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #2a2a3e;
+}
+
+.bench-header h3 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.bench-header p {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.trends-chart {
+  margin-bottom: 32px;
+}
+
+.trends-chart h4 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #ffffff;
+}
+
+.team-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.team-card {
+  background: #0f0f1a;
+  border: 1px solid #2a2a3e;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+}
+
+.team-card.top-rank {
+  border-color: #fbbf24;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, #0f0f1a 100%);
+}
+
+.team-card .badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 24px;
+}
+
+.team-card h4 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #ffffff;
+}
+
+.team-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.team-stats .stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.team-stats .stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.team-stats .stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.team-stats .stat-value.rank {
+  color: #fbbf24;
+}
+
+.bench-insights {
+  display: flex;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.05);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.bench-insights h4 {
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #10b981;
+}
+
+.bench-insights p {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+/* Sentiment */
+.sentiment-card {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.sentiment-card h3 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.sentiment-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sentiment-bar {
+  display: grid;
+  grid-template-columns: 80px 1fr 60px;
+  gap: 12px;
+  align-items: center;
+}
+
+.bar-label {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.bar {
+  height: 24px;
+  background: #0f0f1a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.bar-fill.positive {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.bar-fill.neutral {
+  background: linear-gradient(90deg, #6b7280, #9ca3af);
+}
+
+.bar-fill.negative {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.bar-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: right;
+}
+
+.sentiment-insight {
+  display: flex;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.05);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.sentiment-insight p {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .prediction-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .team-cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .metrics-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .team-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
