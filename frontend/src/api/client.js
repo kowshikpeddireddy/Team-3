@@ -21,6 +21,15 @@ export const getTasks = (filters = {}) => {
   return apiClient.get(`/tasks${params ? '?' + params : ''}`);
 };
 export const getTaskStatusCounts = () => apiClient.get('/tasks/status-counts');
+export const uploadTasksCSV = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiClient.post('/tasks/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
 export const getTask = (taskId) => apiClient.get(`/tasks/${taskId}`);
 export const getProjects = () => apiClient.get('/projects');
 export const getProjectStats = () => apiClient.get('/projects/stats');

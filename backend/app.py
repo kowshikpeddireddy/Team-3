@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 import random
 import re
 import json
+import pandas as pd
+import io
+from werkzeug.utils import secure_filename
 import google.generativeai as genai
 
 from database import db, init_db
@@ -294,6 +297,120 @@ def get_task_status_counts():
         'completed': completed_count,
         'blocked': blocked_count
     })
+
+@app.route('/api/tasks/upload', methods=['POST'])
+def upload_tasks():
+    """Upload tasks from CSV file"""
+    try:
+        # Check if file is in request
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        # Check if file is selected
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Check file extension
+        if not file.filename.endswith('.csv'):
+            return jsonify({'error': 'Only CSV files are allowed'}), 400
+        
+        # Read CSV file
+        try:
+            csv_data = pd.read_csv(io.StringIO(file.stream.read().decode('utf-8')))
+        except Exception as e:
+            return jsonify({'error': f'Invalid CSV format: {str(e)}'}), 400
+        
+        # Validate required columns
+        required_columns = ['task_name', 'status', 'assigned_to']
+        missing_columns = [col for col in required_columns if col not in csv_data.columns]
+        if missing_columns:
+            return jsonify({
+                'error': f'Missing required columns: {", ".join(missing_columns)}',
+                'required': required_columns,
+                'found': list(csv_data.columns)
+            }), 400
+        
+        # Process and insert tasks
+        tasks_added = 0
+        tasks_skipped = 0
+        errors = []
+        
+        for index, row in csv_data.iterrows():
+            try:
+                # Generate task_id if not provided
+                if pd.isna(row.get('task_id')) or not row.get('task_id'):
+                    # Get last task number
+                    last_task = Task.query.order_by(Task.task_id.desc()).first()
+                    if last_task and last_task.task_id.startswith('TASK-'):
+                        last_num = int(last_task.task_id.split('-')[1])
+                        task_id = f'TASK-{str(last_num + 1).zfill(4)}'
+                    else:
+                        task_id = f'TASK-{str(Task.query.count() + 1).zfill(4)}'
+                else:
+                    task_id = str(row['task_id'])
+                
+                # Check if task already exists
+                existing_task = Task.query.filter_by(task_id=task_id).first()
+                if existing_task:
+                    tasks_skipped += 1
+                    continue
+                
+                # Verify user exists
+                user = User.query.filter_by(user_id=str(row['assigned_to'])).first()
+                if not user:
+                    errors.append(f"Row {index + 2}: User {row['assigned_to']} not found")
+                    tasks_skipped += 1
+                    continue
+                
+                # Parse dates
+                created_date = pd.to_datetime(row.get('created_date')) if pd.notna(row.get('created_date')) else datetime.now()
+                due_date = pd.to_datetime(row.get('due_date')) if pd.notna(row.get('due_date')) else None
+                start_date = pd.to_datetime(row.get('start_date')) if pd.notna(row.get('start_date')) else None
+                completed_date = pd.to_datetime(row.get('completed_date')) if pd.notna(row.get('completed_date')) else None
+                
+                # Create new task
+                new_task = Task(
+                    task_id=task_id,
+                    task_name=str(row['task_name']),
+                    description=str(row.get('description', '')) if pd.notna(row.get('description')) else None,
+                    status=str(row['status']),
+                    priority=str(row.get('priority', 'Medium')) if pd.notna(row.get('priority')) else 'Medium',
+                    project=str(row.get('project', 'Web Platform')) if pd.notna(row.get('project')) else 'Web Platform',
+                    assigned_to=str(row['assigned_to']),
+                    created_date=created_date,
+                    due_date=due_date,
+                    start_date=start_date,
+                    completed_date=completed_date,
+                    estimated_hours=float(row.get('estimated_hours', 0)) if pd.notna(row.get('estimated_hours')) else None,
+                    tags=str(row.get('tags', '')) if pd.notna(row.get('tags')) else None,
+                    blocked_reason=str(row.get('blocked_reason', '')) if pd.notna(row.get('blocked_reason')) else None,
+                    comments=str(row.get('comments', '')) if pd.notna(row.get('comments')) else None
+                )
+                
+                db.session.add(new_task)
+                tasks_added += 1
+                
+            except Exception as e:
+                errors.append(f"Row {index + 2}: {str(e)}")
+                tasks_skipped += 1
+                continue
+        
+        # Commit all tasks
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'tasks_added': tasks_added,
+            'tasks_skipped': tasks_skipped,
+            'total_rows': len(csv_data),
+            'errors': errors[:10] if errors else []  # Limit errors to first 10
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():

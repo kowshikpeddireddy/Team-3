@@ -1,0 +1,6 @@
+task_id,task_name,description,status,priority,project,assigned_to,created_date,due_date,start_date,completed_date,estimated_hours,tags,blocked_reason,comments
+TASK-10001,Integrate payment gateway,Add Razorpay integration to checkout flow,In Progress,High,E-Commerce,USER-006,2024-11-06,2024-11-18,2024-11-07,,28,"backend,payments",,Testing sandbox payments
+TASK-10002,Refactor notification handler,Clean up legacy notification service for better reliability,Open,Medium,API Services,USER-007,2024-11-04,2024-11-14,,,20,"backend,refactor",,Need to analyze existing flow
+TASK-10003,Redesign dashboard UI,Create modern dashboard interface using new design system,Open,High,Web Platform,USER-008,2024-11-02,2024-11-22,2024-11-05,,36,"frontend,ui,design",,Waiting for design team feedback
+TASK-10004,Add dark mode support,Implement theme switcher and dark mode assets,Completed,Low,Mobile App,USER-009,2024-10-20,2024-10-30,2024-10-21,2024-10-29,12,"mobile,ui",,Completed and verified
+TASK-10005,Server load testing,Run stress and soak tests for new deployment,Blocked,High,Infra Team,USER-010,2024-11-01,2024-11-12,2024-11-02,,30,"performance,testing",Environment not available,Waiting for DevOps to provision load test servers

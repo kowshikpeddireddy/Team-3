@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Tasks.css';
-import { getTasks, getUsers, getProjectStats, getTaskStatusCounts } from '../api/client';
+import { getTasks, getUsers, getProjectStats, getTaskStatusCounts, uploadTasksCSV } from '../api/client';
 import { Search, Upload, TrendingUp, TrendingDown, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -18,6 +18,9 @@ function Tasks() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Tasks');
   const [currentPage, setCurrentPage] = useState(1);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState(null);
+  const fileInputRef = useRef(null);
   const usersPerPage = 10;
 
   useEffect(() => {
@@ -95,6 +98,61 @@ function Tasks() {
     }
   };
 
+  // Handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      setUploadMessage({
+        type: 'error',
+        text: 'Please upload a CSV file'
+      });
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage(null);
+
+    try {
+      const response = await uploadTasksCSV(file);
+      
+      setUploadMessage({
+        type: 'success',
+        text: `Successfully uploaded! ${response.data.tasks_added} tasks added, ${response.data.tasks_skipped} skipped.`
+      });
+
+      // Refresh data after upload
+      await fetchData();
+
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setUploadMessage(null);
+      }, 5000);
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      const errorMsg = error.response?.data?.error || 'Upload failed. Please try again.';
+      setUploadMessage({
+        type: 'error',
+        text: errorMsg
+      });
+
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setUploadMessage(null);
+      }, 5000);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Prepare project charts data
   const projectTasksData = projectStats.map((p, i) => ({
     name: p.project,
@@ -115,11 +173,31 @@ function Tasks() {
   return (
     <div className="tasks-page">
       <div className="tasks-header">
-        <h1 className="page-title">Tasks</h1>
-        <button className="upload-button">
-          <Upload size={18} />
-          Upload
-        </button>
+        <div className="header-left">
+          <h1 className="page-title">Tasks</h1>
+          {uploadMessage && (
+            <div className={`upload-message ${uploadMessage.type}`}>
+              {uploadMessage.text}
+            </div>
+          )}
+        </div>
+        <div className="header-right">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".csv"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
+          <button 
+            className="upload-button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            <Upload size={18} />
+            {uploading ? 'Uploading...' : 'Upload CSV'}
+          </button>
+        </div>
       </div>
 
       {/* Status Stats Bar */}

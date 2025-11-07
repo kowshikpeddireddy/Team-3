@@ -54,6 +54,11 @@ A real-time team productivity dashboard built with **React** + **Flask** + **SQL
 - 📄 Pagination (10 users per page)
 - 📊 Project distribution charts
 - ✅ Real-time stat updates
+- 📤 **CSV Upload** - Bulk import tasks from CSV files
+  - Auto-generated task IDs
+  - Validation & error handling
+  - Duplicate detection
+  - Instant reflection across all tabs
 
 ### **3. Data Visualization**
 - Donut charts for task distribution
@@ -172,17 +177,22 @@ Frontend opens on: **http://localhost:3000**
 ### **4. Access the Application**
 Open browser: **http://localhost:3000**
 
+### **5. (Optional) Upload Tasks via CSV**
+```bash
+# Use the provided template
+# Edit: sample_tasks_template.csv
+# Go to Tasks tab → Click "Upload CSV" → Select file
+```
+See [CSV_UPLOAD_GUIDE.md](CSV_UPLOAD_GUIDE.md) for detailed instructions.
+
 ---
 
 ## 📚 Documentation
 
 Comprehensive documentation is available:
 
-- **[BACKEND_ARCHITECTURE.md](BACKEND_ARCHITECTURE.md)** - Backend API, endpoints, database schema
-- **[FRONTEND_ARCHITECTURE.md](FRONTEND_ARCHITECTURE.md)** - Frontend components, state management, styling
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick commands and troubleshooting
-- **[FILTER_LOGIC_EXPLAINED.md](FILTER_LOGIC_EXPLAINED.md)** - How filtering works
-- **[TASKS_FIXED.md](TASKS_FIXED.md)** - Tasks tab implementation details
+- **[CSV_UPLOAD_GUIDE.md](CSV_UPLOAD_GUIDE.md)** - CSV upload feature instructions & troubleshooting
+- **[sample_tasks_template.csv](sample_tasks_template.csv)** - CSV template for task uploads
 
 ---
 
@@ -212,6 +222,8 @@ Comprehensive documentation is available:
 
 ### **Tasks Endpoints**
 - `GET /api/tasks?status=Open&page=1&per_page=15` - Get filtered tasks
+- `GET /api/tasks/status-counts` - Get task counts by status
+- `POST /api/tasks/upload` - Upload tasks from CSV file
 - `GET /api/tasks/{task_id}` - Get single task
 
 ### **Users Endpoints**
