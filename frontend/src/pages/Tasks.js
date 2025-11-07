@@ -5,13 +5,13 @@ import { Search, Upload, TrendingUp, TrendingDown } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 function Tasks() {
-  const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
   const [projectStats, setProjectStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Tasks');
-  const [showUpload, setShowUpload] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10;
 
   useEffect(() => {
     fetchData();
@@ -19,15 +19,47 @@ function Tasks() {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const filters = statusFilter !== 'All Tasks' ? { status: statusFilter } : {};
       const [tasksRes, usersRes, statsRes] = await Promise.all([
-        getTasks(filters),
+        getTasks({ ...filters, page: 1, per_page: 2000 }), // Get all filtered tasks to calculate stats
         getUsers(),
         getProjectStats()
       ]);
       
-      setTasks(tasksRes.data);
-      setUsers(usersRes.data);
+      // Merge users with their task stats (from FILTERED tasks)
+      const fetchedUsers = usersRes.data;
+      const usersStats = tasksRes.data.users_stats || {};
+      
+      // Only include users who have tasks in the filtered set
+      const mergedUsers = fetchedUsers
+        .map(user => {
+          const stats = usersStats[user.user_id] || {
+            assigned: 0,
+            completed: 0,
+            in_progress: 0,
+            open: 0
+          };
+          
+          const assigned = stats.assigned;
+          const completed = stats.completed;
+          const inProgress = stats.in_progress;
+          const open = stats.open;
+          const completionPercentage = assigned > 0 ? Math.round((completed / assigned) * 100) : 0;
+          
+          return {
+            ...user,
+            assigned,
+            completed,
+            in_progress: inProgress,
+            open,
+            completion_percentage: completionPercentage,
+            trend: completionPercentage
+          };
+        })
+        .filter(user => user.assigned > 0); // Only show users with tasks in the filtered set
+      
+      setUsers(mergedUsers);
       setProjectStats(statsRes.data);
       setLoading(false);
     } catch (error) {
@@ -36,9 +68,23 @@ function Tasks() {
     }
   };
 
+  // Filter users by search term
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Apply pagination
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const startIndex = (currentPage - 1) * usersPerPage;
+  const endIndex = startIndex + usersPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   // Prepare project charts data
   const projectTasksData = projectStats.map((p, i) => ({
@@ -61,26 +107,11 @@ function Tasks() {
     <div className="tasks-page">
       <div className="tasks-header">
         <h1 className="page-title">Tasks</h1>
-        <button className="upload-button" onClick={() => setShowUpload(!showUpload)}>
+        <button className="upload-button">
           <Upload size={18} />
           Upload
         </button>
       </div>
-
-      {showUpload && (
-        <div className="upload-modal">
-          <div className="upload-content">
-            <h3>Upload Files</h3>
-            <div className="upload-area">
-              <Upload size={48} color="#60a5fa" />
-              <p>Drag and drop files here, or click to browse</p>
-              <p className="upload-hint">PDF, DOCX, JPG, PNG up to 10MB each</p>
-              <button className="browse-button">Browse Files</button>
-            </div>
-            <button className="close-upload" onClick={() => setShowUpload(false)}>Close</button>
-          </div>
-        </div>
-      )}
 
       <div className="tasks-content">
         {/* Left Section - Task Management */}
@@ -95,14 +126,20 @@ function Tasks() {
                   type="text"
                   placeholder="Search Name..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1); // Reset to page 1 when searching
+                  }}
                 />
               </div>
               
               <select 
                 className="status-filter"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1); // Reset to page 1 when filtering
+                }}
               >
                 <option>All Tasks</option>
                 <option>Open</option>
@@ -122,7 +159,7 @@ function Tasks() {
               </div>
               
               <div className="table-body">
-                {filteredUsers.map((user) => (
+                {paginatedUsers.map((user) => (
                   <div key={user.user_id} className="table-row">
                     <div className="td name">
                       <div className="user-avatar" style={{
@@ -140,11 +177,11 @@ function Tasks() {
                       <span className="badge badge-info">{user.in_progress}</span>
                     </div>
                     <div className="td trend">
-                      {user.trend > 50 ? (
+                      {user.completion_percentage >= 50 ? (
                         <span className="trend-up">
                           <TrendingUp size={14} /> {user.completion_percentage}%
                         </span>
-                      ) : user.trend === 0 ? (
+                      ) : user.completion_percentage === 0 ? (
                         <span className="trend-neutral">— {user.completion_percentage}%</span>
                       ) : (
                         <span className="trend-down">
@@ -157,12 +194,67 @@ function Tasks() {
               </div>
             </div>
 
-            <div className="pagination">
-              <button className="page-btn">Previous</button>
-              <button className="page-btn active">1</button>
-              <button className="page-btn">2</button>
-              <button className="page-btn">Next</button>
-            </div>
+            {filteredUsers.length > 0 && (
+              <>
+                <div className="pagination">
+                  <button 
+                    className="page-btn"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  
+                  {/* Show page numbers */}
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNum = index + 1;
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`page-btn ${currentPage === pageNum ? 'active' : ''}`}
+                          onClick={() => handlePageChange(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    } else if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                      return <span key={pageNum} className="page-ellipsis">...</span>;
+                    }
+                    return null;
+                  })}
+                  
+                  <button 
+                    className="page-btn"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                  >
+                    Next
+                  </button>
+                </div>
+                
+                <div className="pagination-info">
+                  Showing {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+                  {statusFilter !== 'All Tasks' && (
+                    <span className="filter-indicator"> (filtered by {statusFilter})</span>
+                  )}
+                </div>
+              </>
+            )}
+            
+            {filteredUsers.length === 0 && !loading && (
+              <div className="no-results">
+                <p>No users found</p>
+                {statusFilter !== 'All Tasks' && (
+                  <p className="hint">Try changing the filter or search term</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -246,4 +338,3 @@ function getAvatarColor(initials) {
 }
 
 export default Tasks;
-

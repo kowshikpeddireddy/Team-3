@@ -10,10 +10,10 @@ const apiClient = axios.create({
 });
 
 // Overview endpoints
-export const getOverview = () => apiClient.get('/overview');
-export const getDistribution = () => apiClient.get('/distribution');
-export const getTrends = () => apiClient.get('/trends');
-export const getTeamPerformance = () => apiClient.get('/team-performance');
+export const getOverview = (filter = 'today') => apiClient.get(`/overview?filter=${filter}`);
+export const getDistribution = (filter = 'today') => apiClient.get(`/distribution?filter=${filter}`);
+export const getTrends = (filter = 'today') => apiClient.get(`/trends?filter=${filter}`);
+export const getTeamPerformance = (filter = 'today') => apiClient.get(`/team-performance?filter=${filter}`);
 
 // Tasks endpoints
 export const getTasks = (filters = {}) => {
@@ -39,8 +39,8 @@ export const getTeamBenchmarking = () => apiClient.get('/ai/team-benchmarking');
 export const getProductivityTrends = () => apiClient.get('/ai/productivity-trends');
 export const getSentiment = () => apiClient.get('/ai/sentiment');
 
-// Chat endpoint
-export const sendChatQuery = (query) => apiClient.post('/chat', { query });
+// Natural Language Query endpoint
+export const sendChatQuery = (question) => apiClient.post('/query', { question });
 
 // Settings endpoints
 export const getSettings = () => apiClient.get('/settings');

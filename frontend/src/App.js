@@ -11,28 +11,29 @@ import Settings from './pages/Settings';
 
 function App() {
   const [activePage, setActivePage] = useState('overview');
+  const [timeFilter, setTimeFilter] = useState('today');
 
   const renderPage = () => {
     switch (activePage) {
       case 'overview':
-        return <Overview />;
+        return <Overview timeFilter={timeFilter} />;
       case 'tasks':
-        return <Tasks />;
+        return <Tasks timeFilter={timeFilter} />;
       case 'ai-insights':
-        return <AIInsights />;
+        return <AIInsights timeFilter={timeFilter} />;
       case 'queries':
         return <Queries />;
       case 'settings':
         return <Settings />;
       default:
-        return <Overview />;
+        return <Overview timeFilter={timeFilter} />;
     }
   };
 
   return (
     <Router>
       <div className="App">
-        <Navbar />
+        <Navbar timeFilter={timeFilter} setTimeFilter={setTimeFilter} />
         <div className="app-container">
           <Sidebar activePage={activePage} setActivePage={setActivePage} />
           <main className="main-content">
