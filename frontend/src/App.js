@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/Navbar';
-import Sidebar from './components/Sidebar';
 import Overview from './pages/Overview';
 import Tasks from './pages/Tasks';
 import AIInsights from './pages/AIInsights';
@@ -33,9 +32,13 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Navbar timeFilter={timeFilter} setTimeFilter={setTimeFilter} />
+        <Navbar 
+          timeFilter={timeFilter} 
+          setTimeFilter={setTimeFilter}
+          activePage={activePage}
+          setActivePage={setActivePage}
+        />
         <div className="app-container">
-          <Sidebar activePage={activePage} setActivePage={setActivePage} />
           <main className="main-content">
             {renderPage()}
           </main>

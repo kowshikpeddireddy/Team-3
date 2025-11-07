@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './Tasks.css';
-import { getTasks, getUsers, getProjectStats } from '../api/client';
-import { Search, Upload, TrendingUp, TrendingDown } from 'lucide-react';
+import { getTasks, getUsers, getProjectStats, getTaskStatusCounts } from '../api/client';
+import { Search, Upload, TrendingUp, TrendingDown, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 function Tasks() {
   const [users, setUsers] = useState([]);
   const [projectStats, setProjectStats] = useState([]);
+  const [statusCounts, setStatusCounts] = useState({
+    all: 0,
+    open: 0,
+    in_progress: 0,
+    completed: 0,
+    blocked: 0
+  });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Tasks');
@@ -21,10 +28,11 @@ function Tasks() {
     try {
       setLoading(true);
       const filters = statusFilter !== 'All Tasks' ? { status: statusFilter } : {};
-      const [tasksRes, usersRes, statsRes] = await Promise.all([
+      const [tasksRes, usersRes, statsRes, countsRes] = await Promise.all([
         getTasks({ ...filters, page: 1, per_page: 2000 }), // Get all filtered tasks to calculate stats
         getUsers(),
-        getProjectStats()
+        getProjectStats(),
+        getTaskStatusCounts()
       ]);
       
       // Merge users with their task stats (from FILTERED tasks)
@@ -61,6 +69,7 @@ function Tasks() {
       
       setUsers(mergedUsers);
       setProjectStats(statsRes.data);
+      setStatusCounts(countsRes.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -111,6 +120,89 @@ function Tasks() {
           <Upload size={18} />
           Upload
         </button>
+      </div>
+
+      {/* Status Stats Bar */}
+      <div className="status-stats-bar">
+        <div 
+          className={`status-stat-card ${statusFilter === 'All Tasks' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('All Tasks');
+            setCurrentPage(1);
+          }}
+        >
+          <div className="stat-icon all">
+            <Clock size={20} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">All Tasks</div>
+            <div className="stat-value">{statusCounts.all}</div>
+          </div>
+        </div>
+
+        <div 
+          className={`status-stat-card ${statusFilter === 'Open' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('Open');
+            setCurrentPage(1);
+          }}
+        >
+          <div className="stat-icon open">
+            <AlertCircle size={20} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Open</div>
+            <div className="stat-value">{statusCounts.open}</div>
+          </div>
+        </div>
+
+        <div 
+          className={`status-stat-card ${statusFilter === 'In Progress' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('In Progress');
+            setCurrentPage(1);
+          }}
+        >
+          <div className="stat-icon in-progress">
+            <Clock size={20} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">In Progress</div>
+            <div className="stat-value">{statusCounts.in_progress}</div>
+          </div>
+        </div>
+
+        <div 
+          className={`status-stat-card ${statusFilter === 'Completed' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('Completed');
+            setCurrentPage(1);
+          }}
+        >
+          <div className="stat-icon completed">
+            <CheckCircle size={20} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Completed</div>
+            <div className="stat-value">{statusCounts.completed}</div>
+          </div>
+        </div>
+
+        <div 
+          className={`status-stat-card ${statusFilter === 'Blocked' ? 'active' : ''}`}
+          onClick={() => {
+            setStatusFilter('Blocked');
+            setCurrentPage(1);
+          }}
+        >
+          <div className="stat-icon blocked">
+            <XCircle size={20} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-label">Blocked</div>
+            <div className="stat-value">{statusCounts.blocked}</div>
+          </div>
+        </div>
       </div>
 
       <div className="tasks-content">

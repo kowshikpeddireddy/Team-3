@@ -20,6 +20,7 @@ export const getTasks = (filters = {}) => {
   const params = new URLSearchParams(filters).toString();
   return apiClient.get(`/tasks${params ? '?' + params : ''}`);
 };
+export const getTaskStatusCounts = () => apiClient.get('/tasks/status-counts');
 export const getTask = (taskId) => apiClient.get(`/tasks/${taskId}`);
 export const getProjects = () => apiClient.get('/projects');
 export const getProjectStats = () => apiClient.get('/projects/stats');
@@ -30,14 +31,14 @@ export const getUsers = (search = '') => {
 };
 export const getUser = (userId) => apiClient.get(`/users/${userId}`);
 
-// AI Insights endpoints
-export const getAISummary = () => apiClient.get('/ai/summary');
-export const getClosurePerformance = () => apiClient.get('/ai/closure-performance');
-export const getDueCompliance = () => apiClient.get('/ai/due-compliance');
-export const getPredictions = () => apiClient.get('/ai/predictions');
-export const getTeamBenchmarking = () => apiClient.get('/ai/team-benchmarking');
-export const getProductivityTrends = () => apiClient.get('/ai/productivity-trends');
-export const getSentiment = () => apiClient.get('/ai/sentiment');
+// AI Insights endpoints (with filter support)
+export const getAISummary = (filter = 'today') => apiClient.get(`/ai/summary?filter=${filter}`);
+export const getClosurePerformance = (filter = 'today') => apiClient.get(`/ai/closure-performance?filter=${filter}`);
+export const getDueCompliance = (filter = 'today') => apiClient.get(`/ai/due-compliance?filter=${filter}`);
+export const getPredictions = (filter = 'today') => apiClient.get(`/ai/predictions?filter=${filter}`);
+export const getTeamBenchmarking = (filter = 'today') => apiClient.get(`/ai/team-benchmarking?filter=${filter}`);
+export const getProductivityTrends = (filter = 'today') => apiClient.get(`/ai/productivity-trends?filter=${filter}`);
+export const getSentiment = (filter = 'today') => apiClient.get(`/ai/sentiment?filter=${filter}`);
 
 // Natural Language Query endpoint
 export const sendChatQuery = (question) => apiClient.post('/query', { question });

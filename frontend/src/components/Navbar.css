@@ -11,6 +11,13 @@
 .navbar-left {
   display: flex;
   align-items: center;
+  gap: 32px;
+  flex: 1;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 
@@ -22,6 +29,37 @@
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.5px;
+}
+
+/* Horizontal Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.nav-tab:hover {
+  color: #ffffff;
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.nav-tab.active {
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .navbar-right {
@@ -61,5 +99,52 @@
 .profile-button:hover {
   transform: scale(1.05);
   transition: transform 0.2s;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .navbar {
+    padding: 0 20px;
+  }
+
+  .navbar-left {
+    gap: 20px;
+  }
+
+  .nav-tab {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    height: auto;
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .navbar-left {
+    width: 100%;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .logo-container {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-tabs {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
