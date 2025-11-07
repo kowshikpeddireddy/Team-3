@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import random
+from sqlalchemy import func as sa_func, case, and_ # <-- Added 'and_' import
 
 from database import db, init_db
 from models import User, Task
@@ -296,38 +297,69 @@ def get_user(user_id):
     })
 
 # ==================== AI INSIGHTS ENDPOINTS ====================
+#
+# ----- UPDATED DYNAMIC AI FUNCTIONS START HERE -----
+#
 
 @app.route('/api/ai/summary', methods=['GET'])
 def get_ai_summary():
-    """AI-powered summary"""
+    """AI-powered summary (DYNAMIC)"""
+    now = datetime.now()
+    
+    # Completed in last 24h
     completed_24h = Task.query.filter(
         Task.status == 'Completed',
-        Task.completed_date >= datetime.now() - timedelta(hours=24)
+        Task.completed_date >= now - timedelta(hours=24)
     ).count()
     
-    # Calculate average closure time
+    # Average closure time (using last 50 completed tasks)
     completed_tasks = Task.query.filter(
         Task.status == 'Completed',
         Task.completed_date.isnot(None),
         Task.created_date.isnot(None)
-    ).limit(50).all()
+    ).order_by(Task.completed_date.desc()).limit(50).all()
     
+    avg_closure = 0.0
     if completed_tasks:
         closure_times = []
         for task in completed_tasks:
             delta = task.completed_date - task.created_date
             hours = delta.total_seconds() / 3600
             closure_times.append(hours)
-        avg_closure = round(sum(closure_times) / len(closure_times), 1)
-    else:
-        avg_closure = 58.1
-    
+        if closure_times:
+            avg_closure = round(sum(closure_times) / len(closure_times), 1)
+
+    # Blocked tasks
     blocked = Task.query.filter_by(status='Blocked').count()
     
-    velocity_change = round(random.uniform(-20, -15), 1)
+    # Velocity Change (Last 7 days vs. Previous 7 days)
+    completed_last_week = Task.query.filter(
+        Task.status == 'Completed',
+        Task.completed_date >= now - timedelta(days=7)
+    ).count()
     
+    completed_prev_week = Task.query.filter(
+        Task.status == 'Completed',
+        Task.completed_date >= (now - timedelta(days=14)),
+        Task.completed_date < (now - timedelta(days=7))
+    ).count()
+    
+    velocity_change = 0.0
+    if completed_prev_week > 0:
+        velocity_change = round(((completed_last_week - completed_prev_week) / completed_prev_week * 100), 1)
+    elif completed_last_week > 0:
+        velocity_change = 100.0 # From 0 to >0 is 100% (or infinite) change
+        
+    # Build summary string
     summary = f"Over the last 24 hours, your team completed {completed_24h} tasks with an average closure time of {avg_closure} hours. "
-    summary += f"Task completion velocity has decreased by {abs(velocity_change)}%, indicating potential bottlenecks. "
+    
+    if velocity_change > 0:
+        summary += f"Task completion velocity has increased by {velocity_change}%. "
+    elif velocity_change < 0:
+        summary += f"Task completion velocity has decreased by {abs(velocity_change)}%. "
+    else:
+        summary += "Task completion velocity is stable. "
+        
     summary += f"There are {blocked} blocked tasks requiring attention."
     
     return jsonify({
@@ -340,107 +372,270 @@ def get_ai_summary():
 
 @app.route('/api/ai/closure-performance', methods=['GET'])
 def get_closure_performance():
-    """Task closure performance metrics"""
+    """Task closure performance metrics (DYNAMIC)"""
+    
+    # --- Current Period (Last 30 days) ---
+    now = datetime.now()
+    current_start = now - timedelta(days=30)
+    
+    completed_current = Task.query.filter(
+        Task.status == 'Completed',
+        Task.completed_date >= current_start,
+        Task.created_date.isnot(None)
+    ).all()
+    
+    current_avg_val = 0.0
+    if completed_current:
+        closure_times = [(t.completed_date - t.created_date).total_seconds() / 3600 for t in completed_current]
+        if closure_times:
+            current_avg_val = round(sum(closure_times) / len(closure_times), 1)
+
+    # --- Previous Period (30-60 days ago) ---
+    previous_start = now - timedelta(days=60)
+    previous_end = current_start
+    
+    completed_previous = Task.query.filter(
+        Task.status == 'Completed',
+        Task.completed_date >= previous_start,
+        Task.completed_date < previous_end,
+        Task.created_date.isnot(None)
+    ).all()
+
+    previous_avg_val = 0.0
+    if completed_previous:
+        closure_times_prev = [(t.completed_date - t.created_date).total_seconds() / 3600 for t in completed_previous]
+        if closure_times_prev:
+            previous_avg_val = round(sum(closure_times_prev) / len(closure_times_prev), 1)
+
+    # --- Blocked Stats ---
+    blocked_count = Task.query.filter_by(status='Blocked').count()
+    total_tasks = Task.query.count()
+    blocked_perc = round((blocked_count / total_tasks * 100), 1) if total_tasks > 0 else 0
+    
     return jsonify({
-        'current_avg': 30.1,
-        'previous_avg': 25.6,
-        'blocked_tasks': Task.query.filter_by(status='Blocked').count(),
-        'blocked_percentage': 30.0
+        'current_avg': current_avg_val,
+        'previous_avg': previous_avg_val,
+        'blocked_tasks': blocked_count,
+        'blocked_percentage': blocked_perc
     })
 
 @app.route('/api/ai/due-compliance', methods=['GET'])
 def get_due_compliance():
-    """Due date compliance metrics"""
-    total_completed = Task.query.filter_by(status='Completed').count()
+    """Due date compliance metrics (DYNAMIC)"""
+    now = datetime.now()
     
-    # Mock data for overdue and on-time
-    overdue = 14
-    on_time = 23
+    # Overdue tasks (completed after due date)
+    overdue_count = Task.query.filter(
+        Task.status == 'Completed',
+        Task.completed_date.isnot(None),
+        Task.due_date.isnot(None),
+        Task.completed_date > Task.due_date
+    ).count()
+    
+    # On-time tasks (completed on or before due date)
+    on_time_count = Task.query.filter(
+        Task.status == 'Completed',
+        Task.completed_date.isnot(None),
+        Task.due_date.isnot(None),
+        Task.completed_date <= Task.due_date
+    ).count()
+    
+    # Active tasks and their average time
+    active_tasks_list = Task.query.filter(
+        Task.status == 'In Progress',
+        Task.start_date.isnot(None)
+    ).all()
+    
+    active_tasks_count = len(active_tasks_list)
+    avg_active_time_val = 0.0
+    
+    if active_tasks_list:
+        active_times = [(now - t.start_date).total_seconds() / 3600 for t in active_tasks_list]
+        avg_active_time_val = round(sum(active_times) / len(active_times), 1)
     
     return jsonify({
-        'overdue': overdue,
-        'on_time': on_time,
-        'active_tasks': Task.query.filter_by(status='In Progress').count(),
-        'avg_active_time': 159.2
+        'overdue': overdue_count,
+        'on_time': on_time_count,
+        'active_tasks': active_tasks_count,
+        'avg_active_time': avg_active_time_val
     })
 
 @app.route('/api/ai/predictions', methods=['GET'])
 def get_predictions():
-    """Predictive analytics"""
+    """Predictive analytics (Data-driven mock)"""
+    now = datetime.now()
+    
+    # --- Sprint Completion (e.g., tasks due in last 2 weeks) ---
+    sprint_start = now - timedelta(days=14)
+    sprint_tasks_query = Task.query.filter(Task.due_date >= sprint_start, Task.due_date <= now)
+    
+    total_sprint_tasks = sprint_tasks_query.count()
+    completed_sprint_tasks = sprint_tasks_query.filter(Task.status == 'Completed').count()
+    
+    sprint_completion_perc = 0
+    if total_sprint_tasks > 0:
+        sprint_completion_perc = round((completed_sprint_tasks / total_sprint_tasks * 100))
+
+    # --- Next Week Workload (based on new tasks created) ---
+    tasks_created_last_week = Task.query.filter(Task.created_date >= (now - timedelta(days=7))).count()
+    
+    workload = 'Low'
+    expected_tasks = 20
+    if tasks_created_last_week > 15: # Adjust these thresholds
+        workload = 'Medium'
+        expected_tasks = 35
+    if tasks_created_last_week > 30:
+        workload = 'High'
+        expected_tasks = 50 # <-- FIXED SYNTAX ERROR HERE (was 50+)
+
+    # --- Risk Level (based on blocked tasks) ---
+    blocked_tasks_count = Task.query.filter_by(status='Blocked').count()
+    risk = 'Low'
+    risk_desc = 'No major bottlenecks'
+    if blocked_tasks_count > 5:
+        risk = 'Medium'
+        risk_desc = f'{blocked_tasks_count} tasks are blocked, investigate.'
+    if blocked_tasks_count > 10:
+        risk = 'High'
+        risk_desc = f'High number of blocked tasks ({blocked_tasks_count})!'
+    
     return jsonify({
-        'sprint_completion': 94,
-        'next_week_workload': 'Medium',
-        'expected_tasks': 48,
-        'risk_level': 'Low',
-        'risk_description': 'No major bottlenecks'
+        'sprint_completion': sprint_completion_perc,
+        'next_week_workload': workload,
+        'expected_tasks': expected_tasks,
+        'risk_level': risk,
+        'risk_description': risk_desc
     })
 
 @app.route('/api/ai/team-benchmarking', methods=['GET'])
 def get_team_benchmarking():
-    """Team benchmarking data"""
-    teams = [
-        {
-            'name': 'Your Team',
-            'total_tasks': 178,
-            'velocity': 49,
-            'efficiency': 92,
-            'rank': 2,
-            'badge': None
-        },
-        {
-            'name': 'Alpha Team',
-            'total_tasks': 186,
-            'velocity': 51,
-            'efficiency': 94,
-            'rank': 1,
-            'badge': '🏆'
-        },
-        {
-            'name': 'Beta Team',
-            'total_tasks': 162,
-            'velocity': 44,
-            'efficiency': 88,
-            'rank': 3,
-            'badge': None
-        },
-        {
-            'name': 'Gamma Team',
-            'total_tasks': 160,
-            'velocity': 45,
-            'efficiency': 85,
-            'rank': 4,
-            'badge': None
-        }
-    ]
+    """Team benchmarking data (DYNAMIC)"""
+    now = datetime.now()
+    four_weeks_ago = now - timedelta(weeks=4)
     
-    return jsonify(teams)
+    # Join User and Task, group by team, and calculate aggregates
+    team_stats = db.session.query(
+        User.team,
+        sa_func.count(Task.task_id).label('total_tasks'),
+        
+        sa_func.sum(
+            case((Task.status == 'Completed', 1), else_=0)
+        ).label('total_completed'),
+        
+        # --- FIXED VALUEERROR HERE ---
+        # Used and_() to combine conditions into one tuple: (condition, result)
+        sa_func.sum(
+            case(
+                (and_(Task.status == 'Completed', Task.completed_date >= four_weeks_ago), 1),
+                else_=0
+            )
+        ).label('velocity_tasks'),
+        
+        # --- FIXED VALUEERROR HERE ---
+        # Used and_() and added check for due_date to prevent errors
+        sa_func.sum(
+            case(
+                (and_(Task.status == 'Completed', Task.due_date.isnot(None), Task.completed_date <= Task.due_date), 1),
+                else_=0
+            )
+        ).label('on_time_tasks')
+        
+    ).join(Task, User.user_id == Task.assigned_to).filter(User.team.isnot(None)).group_by(User.team).all()
+    
+    result = []
+    for stat in team_stats:
+        velocity = round(stat.velocity_tasks / 4, 1) # Tasks per week
+        # Check for zero division error
+        efficiency = round((stat.on_time_tasks / stat.total_completed * 100), 1) if stat.total_completed > 0 else 0
+        
+        result.append({
+            'name': stat.team,
+            'total_tasks': stat.total_tasks,
+            'velocity': velocity,
+            'efficiency': efficiency,
+            'badge': None
+        })
+    
+    # Sort by velocity to determine rank
+    result_sorted = sorted(result, key=lambda x: x['velocity'], reverse=True)
+    
+    final_teams = []
+    for i, team in enumerate(result_sorted, 1):
+        team['rank'] = i
+        if i == 1:
+            team['badge'] = '🏆'
+        final_teams.append(team)
+        
+    return jsonify(final_teams)
 
 @app.route('/api/ai/productivity-trends', methods=['GET'])
 def get_productivity_trends():
-    """4-week productivity trends"""
-    weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+    """4-week productivity trends (DYNAMIC)"""
+    now = datetime.now()
     
-    data = []
-    for week in weeks:
-        data.append({
-            'week': week,
-            'your_team': random.randint(35, 48),
-            'alpha_team': random.randint(40, 51),
-            'beta_team': random.randint(30, 44),
-            'gamma_team': random.randint(28, 45)
-        })
+    # Define the 4 weeks
+    weeks = {
+        'Week 4': (now - timedelta(weeks=1), now), # Last 7 days
+        'Week 3': (now - timedelta(weeks=2), now - timedelta(weeks=1)),
+        'Week 2': (now - timedelta(weeks=3), now - timedelta(weeks=2)),
+        'Week 1': (now - timedelta(weeks=4), now - timedelta(weeks=3)),
+    }
     
-    return jsonify(data)
+    # Frontend keys are hardcoded, so we must map them
+    key_mapping = {
+        'Your Team': 'your_team',
+        'Alpha Team': 'alpha_team',
+        'Beta Team': 'beta_team',
+        'Gamma Team': 'gamma_team'
+    }
+    
+    # Initialize data structure
+    trends_data = {}
+    for week_name in weeks.keys():
+        trends_data[week_name] = {'week': week_name}
+        for fe_key in key_mapping.values():
+            trends_data[week_name][fe_key] = 0
+
+    # Query the database for each week
+    for week_name, (start_date, end_date) in weeks.items():
+        tasks_in_week = db.session.query(
+            User.team,
+            sa_func.count(Task.task_id).label('completed_count')
+        ).join(Task, User.user_id == Task.assigned_to).filter(
+            Task.status == 'Completed',
+            Task.completed_date >= start_date,
+            Task.completed_date < end_date,
+            User.team.in_(key_mapping.keys())
+        ).group_by(User.team).all()
+        
+        for team_result in tasks_in_week:
+            fe_key = key_mapping.get(team_result.team)
+            if fe_key:
+                trends_data[week_name][fe_key] = team_result.completed_count
+    
+    # Convert dict to the list format the frontend expects
+    final_trends = [trends_data['Week 1'], trends_data['Week 2'], trends_data['Week 3'], trends_data['Week 4']]
+            
+    return jsonify(final_trends)
 
 @app.route('/api/ai/sentiment', methods=['GET'])
 def get_sentiment():
-    """Team communication sentiment analysis"""
+    """Team communication sentiment analysis (MOCK)"""
+    # NOTE: Real sentiment analysis requires a Natural Language Processing (NLP)
+    # library (like NLTK or spaCy) to analyze task comments.
+    # This remains a placeholder mock.
     return jsonify({
         'positive': 75,
         'neutral': 20,
         'negative': 5,
         'insight': 'Team morale appears positive. Keep up the good work and maintain open communication.'
     })
+
+#
+# ----- UPDATED DYNAMIC AI FUNCTIONS END HERE -----
+#
+# =========================================================
+
 
 # ==================== QUERIES/CHAT ENDPOINTS ====================
 
@@ -522,4 +717,3 @@ if __name__ == '__main__':
         print("🚀 Server running on http://localhost:5001")
     
     app.run(debug=True, port=5001, host='0.0.0.0')
-

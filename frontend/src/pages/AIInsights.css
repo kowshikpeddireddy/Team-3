@@ -1,396 +1,147 @@
-.ai-insights-page {
-  max-width: 1400px;
-  margin: 0 auto;
-}
+.ai-insights-page { max-width: 1400px; margin: 0 auto; }
+.page-title { font-size: 28px; font-weight: 700; margin-bottom: 24px; color: #fff; }
+.loading { display:flex; align-items:center; justify-content:center; height: 320px; color:#9ca3af; }
 
-/* AI Summary */
-.ai-summary-card {
-  background: linear-gradient(135deg, #1a2a3a 0%, #1a1a2e 100%);
-  border: 1px solid #2a2a3e;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  display: flex;
-  gap: 16px;
+/* cinematic background */
+.holo-bg { position: relative; isolation: isolate; }
+.holo-bg::before {
+  content:""; position:absolute; inset:-60px;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(59,130,246,0.10), transparent 60%),
+    radial-gradient(1000px 600px at 110% 10%, rgba(139,92,246,0.10), transparent 60%),
+    linear-gradient(120deg, rgba(16,185,129,0.06), transparent 60%);
+  filter: blur(18px);
+  z-index:-1;
+  animation: hueSpin 36s linear infinite;
 }
+@keyframes hueSpin { 0% { filter: hue-rotate(0deg) blur(18px);} 100% { filter: hue-rotate(360deg) blur(18px);} }
 
-.summary-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: rgba(16, 185, 129, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.summary-content h3 {
-  font-size: 18px;
-  margin-bottom: 8px;
-  color: #ffffff;
-}
-
-.summary-content p {
-  color: #9ca3af;
-  line-height: 1.6;
-}
-
-/* Metrics Row */
-.metrics-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.metric-box {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  gap: 16px;
-}
-
-.metric-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: rgba(59, 130, 246, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.metric-box h4 {
-  font-size: 14px;
-  color: #9ca3af;
-  margin-bottom: 12px;
-  font-weight: 500;
-}
-
-.metric-values {
-  display: flex;
-  gap: 20px;
-}
-
-.metric-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.metric-item .label {
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.metric-item .value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.metric-item .value.danger {
-  color: #ef4444;
-}
-
-.metric-item .value.success {
-  color: #10b981;
-}
-
-/* Predictions */
-.predictions-card {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-}
-
-.predictions-card h3 {
-  font-size: 20px;
-  margin-bottom: 4px;
-}
-
-.subtitle {
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 24px;
-}
-
-.prediction-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-
-.prediction-item {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.pred-label {
-  font-size: 13px;
-  color: #9ca3af;
-  font-weight: 500;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #0f0f1a;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  transition: width 0.5s ease;
-}
-
-.pred-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.pred-value-large {
-  font-size: 28px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.pred-value-large.success {
-  color: #10b981;
-}
-
-.pred-detail {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-/* Benchmarking */
-.benchmarking-card {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-}
-
-.bench-header {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 32px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #2a2a3e;
-}
-
-.bench-header h3 {
-  font-size: 20px;
-  margin-bottom: 4px;
-}
-
-.bench-header p {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.trends-chart {
-  margin-bottom: 32px;
-}
-
-.trends-chart h4 {
-  font-size: 16px;
-  margin-bottom: 16px;
-  color: #ffffff;
-}
-
-.team-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.team-card {
-  background: #0f0f1a;
-  border: 1px solid #2a2a3e;
-  border-radius: 12px;
-  padding: 20px;
-  position: relative;
-}
-
-.team-card.top-rank {
-  border-color: #fbbf24;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, #0f0f1a 100%);
-}
-
-.team-card .badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-size: 24px;
-}
-
-.team-card h4 {
-  font-size: 16px;
-  margin-bottom: 16px;
-  color: #ffffff;
-}
-
-.team-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.team-stats .stat {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.team-stats .stat-label {
-  font-size: 11px;
-  color: #6b7280;
-  text-transform: uppercase;
-}
-
-.team-stats .stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.team-stats .stat-value.rank {
-  color: #fbbf24;
-}
-
-.bench-insights {
-  display: flex;
-  gap: 12px;
-  background: rgba(16, 185, 129, 0.05);
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.bench-insights h4 {
-  font-size: 14px;
-  margin-bottom: 4px;
-  color: #10b981;
-}
-
-.bench-insights p {
-  font-size: 13px;
-  color: #9ca3af;
-  line-height: 1.6;
-}
-
-/* Sentiment */
+/* --- NEW: Glassmorphism Card Styles ---
+This single rule replaces the individual background/border styles for all cards 
+*/
+.ai-summary-card,
+.metric-box,
+.predictions-card,
+.benchmarking-card,
 .sentiment-card {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
+  /* Frosted glass background */
+  background: rgba(15, 15, 26, 0.65); /* 65% opaque version of your #0f0f1a */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* For Safari */
+  
+  /* Subtle glass edge */
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  
+  /* Existing styles */
   border-radius: 16px;
   padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
 }
+/* --- End New Card Styles --- */
 
-.sentiment-card h3 {
-  font-size: 20px;
-  margin-bottom: 4px;
+
+.ai-summary-card { display:flex; gap:16px; margin-bottom:24px; }
+.summary-icon { width:48px; height:48px; border-radius:12px; background: rgba(16,185,129,.1); display:flex; align-items:center; justify-content:center; }
+
+.metrics-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px; margin-bottom:24px; }
+.metric-box { display:flex; gap:16px; }
+.metric-icon { width:40px; height:40px; border-radius:8px; background: rgba(59,130,246,.12); display:flex; align-items:center; justify-content:center; }
+.metric-box h4 { font-size:14px; color:#9ca3af; margin-bottom:12px; font-weight:500; }
+.metric-values { display:flex; gap:20px; }
+.metric-item { display:flex; flex-direction:column; gap:4px; }
+.metric-item .label { font-size:11px; color:#6b7280; letter-spacing:.4px; text-transform:uppercase; }
+.metric-item .value { font-size:20px; color:#fff; font-weight:700; }
+.metric-item .value.danger { color:#ef4444; }
+.metric-item .value.success { color:#10b981; }
+
+.predictions-card { margin-bottom:24px; }
+.subtitle { font-size:13px; color:#6b7280; margin-bottom:20px; }
+.prediction-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:24px; }
+.prediction-item { display:flex; flex-direction:column; gap:12px; }
+
+/* --- NEW: Radial Chart Styles --- */
+.prediction-item.center-radial {
+  align-items: center; /* Helps center the chart */
 }
-
-.sentiment-bars {
+.radial-chart-container {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.sentiment-bar {
-  display: grid;
-  grid-template-columns: 80px 1fr 60px;
-  gap: 12px;
   align-items: center;
+  justify-content: center;
+  height: 120px; 
+  margin-top: 8px;
+}
+.radial-chart-value {
+  position: absolute;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+}
+/* --- End Radial Chart Styles --- */
+
+/* (Original progress bar styles removed for brevity, you can keep or delete them) */
+.pred-label { font-size:13px; color:#9ca3af; font-weight:500; }
+.pred-value { font-size:22px; font-weight:700; color:#fff; }
+.pred-value-large { font-size:26px; font-weight:700; color:#fff; }
+.pred-value-large.success { color:#10b981; }
+.pred-detail { font-size:13px; color:#6b7280; }
+
+.bench-header { display:flex; gap:16px; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid #2a2a3e; }
+.trends-chart { margin-bottom:24px; }
+.chart-3d-wrap { transform: none; }
+
+.team-cards-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-bottom:20px; }
+.team-card { 
+  background:#0b0f1a; 
+  border:1px solid #2a2a3e; 
+  border-radius:12px; 
+  padding:18px; 
+  position:relative; 
+  /* --- NEW: Transition for interaction --- */
+  transition: transform 0.25s ease, opacity 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.bar-label {
-  font-size: 13px;
-  color: #9ca3af;
-  font-weight: 500;
+/* --- NEW: Interactive Card Styles --- */
+.team-card.dimmed {
+  opacity: 0.4;
+  transform: scale(0.98);
 }
-
-.bar {
-  height: 24px;
-  background: #0f0f1a;
-  border-radius: 12px;
-  overflow: hidden;
+.team-card.highlighted {
+  opacity: 1;
+  transform: scale(1.02);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
 }
+/* --- End Interactive Card Styles --- */
 
-.bar-fill {
-  height: 100%;
-  transition: width 0.5s ease;
-}
 
-.bar-fill.positive {
-  background: linear-gradient(90deg, #10b981, #34d399);
-}
+.team-card.top-rank { border-color:#fbbf24; background: linear-gradient(135deg, rgba(251,191,36,.07) 0%, #0b0f1a 100%); }
+.team-card .badge { position:absolute; top:12px; right:12px; font-size:20px; }
+.team-card h4 { font-size:16px; color:#fff; margin-bottom:12px; }
+.team-stats { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+.stat { display:flex; flex-direction:column; gap:4px; }
+.stat-label { font-size:11px; color:#6b7280; text-transform:uppercase; }
+.stat-value { font-size:18px; font-weight:700; color:#fff; }
+.stat-value.rank { color:#fbbf24; }
+.bench-insights { display:flex; gap:12px; background: rgba(16,185,129,.05); border:1px solid rgba(16,185,129,.2); padding:16px; border-radius:8px; }
 
-.bar-fill.neutral {
-  background: linear-gradient(90deg, #6b7280, #9ca3af);
-}
+.sentiment-bars { display:flex; flex-direction:column; gap:14px; margin: 16px 0; }
+.sentiment-bar { display:grid; grid-template-columns: 80px 1fr 60px; gap:12px; align-items:center; }
+.bar { height:22px; background:#0a0e17; border-radius:12px; overflow:hidden; }
+.bar-fill.positive { background: linear-gradient(90deg,#10b981,#34d399); }
+.bar-fill.neutral { background: linear-gradient(90deg,#6b7280,#9ca3af); }
+.bar-fill.negative { background: linear-gradient(90deg,#ef4444,#f87171); }
+.bar-label { font-size:13px; color:#9ca3af; }
+.bar-value { font-size:14px; color:#fff; text-align:right; }
 
-.bar-fill.negative {
-  background: linear-gradient(90deg, #ef4444, #f87171);
-}
+/* responsive */
+@media (max-width: 1024px) { .prediction-grid { grid-template-columns: 1fr; } .team-cards-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 768px) { .team-cards-grid { grid-template-columns: 1fr; } }
 
-.bar-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-  text-align: right;
-}
-
-.sentiment-insight {
-  display: flex;
-  gap: 12px;
-  background: rgba(16, 185, 129, 0.05);
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-
-.sentiment-insight p {
-  font-size: 13px;
-  color: #9ca3af;
-  line-height: 1.6;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .prediction-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .team-cards-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .metrics-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .team-cards-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* === Stable Motion Overrides === */
+:root { --ease-smooth: cubic-bezier(.22,.61,.36,1); --elev-1: 0 6px 20px rgba(0,0,0,.25); }
+.tilt { transform: none !important; transition: transform 280ms var(--ease-smooth), box-shadow 280ms var(--ease-smooth); }
+.tilt:hover { transform: translateY(-2px); box-shadow: var(--elev-1); }
+.holo-sheen::before { animation-duration: 14s !important; opacity: .25; }
+.floaty { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
